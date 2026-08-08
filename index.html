@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+  <title>車両鍵管理</title>
+
+
+  <!-- バーコード読み取りライブラリ -->
+  <script
+    src="https://unpkg.com/html5-qrcode"
+    type="text/javascript">
+  </script>
+
+
+  <style>
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 18px;
+
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+
+      background: #f5f5f5;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      text-align: center;
+      margin: 10px 0 20px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+
+    .tab {
+      flex: 1;
+
+      padding: 16px 5px;
+
+      border: none;
+      border-radius: 10px;
+
+      font-size: 18px;
+      font-weight: bold;
+
+      cursor: pointer;
+
+      background: #ddd;
+    }
+
+    .tab.active {
+      background: #333;
+      color: white;
+    }
+
+    .card {
+      background: white;
+
+      padding: 22px;
+
+      margin-bottom: 18px;
+
+      border-radius: 15px;
+
+      box-shadow:
+        0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    label {
+      display: block;
+
+      margin-top: 10px;
+      margin-bottom: 7px;
+
+      font-weight: bold;
+      font-size: 17px;
+    }
+
+    input {
+      width: 100%;
+
+      padding: 14px;
+
+      margin-bottom: 10px;
+
+      border: 1px solid #ccc;
+      border-radius: 9px;
+
+      font-size: 19px;
+    }
+
+    input.barcode {
+      background: #f7f7f7;
+    }
+
+    .cameraButton {
+      width: 100%;
+
+      padding: 13px;
+
+      margin-bottom: 18px;
+
+      border: none;
+      border-radius: 9px;
+
+      font-size: 17px;
+
+      cursor: pointer;
+
+      background: #eee;
+    }
+
+    .mainButton {
+      width: 100%;
+
+      padding: 18px;
+
+      margin-top: 10px;
+
+      border: none;
+      border-radius: 10px;
+
+      background: #333;
+      color: white;
+
+      font-size: 21px;
+      font-weight: bold;
+
+      cursor: pointer;
+    }
+
+    .description {
+      color: #555;
+      line-height: 1.6;
+    }
+
+    .pinBox {
+      margin-bottom: 18px;
+    }
+
+    .scanBox {
+      background: white;
+
+      padding: 20px;
+
+      border-radius: 15px;
+
+      margin-bottom: 18px;
+    }
+
+    #reader {
+      width: 100%;
+    }
+
+    #scanMessage {
+      text-align: center;
+
+      margin-bottom: 12px;
+
+      font-weight: bold;
+    }
+
+    .closeButton {
+      width: 100%;
+
+      padding: 13px;
+
+      margin-top: 12px;
+
+      border: none;
+      border-radius: 9px;
+
+      background: #ddd;
+
+      font-size: 17px;
+    }
+
+  </style>
+
+</head>
+
+
+<body>
+
+<div class="container">
+
+
+  <h1>
+    🚗 車両鍵管理
+  </h1>
+
+
+  <!-- =====================================================
+       共通PIN
+       ===================================================== -->
+
+  <div class="card pinBox">
+
+    <label>
+      利用PIN
+    </label>
+
+    <input
+      id="pin"
+      type="password"
+      inputmode="numeric"
+      autocomplete="off"
+      placeholder="会社用PIN">
+
+  </div>
+
+
+  <!-- =====================================================
+       操作タブ
+       ===================================================== -->
+
+  <div class="tabs">
+
+    <button
+      id="startTab"
+      class="tab active"
+      onclick="showMode('start')">
+
+      使用開始
+
+    </button>
+
+
+    <button
+      id="transferTab"
+      class="tab"
+      onclick="showMode('transfer')">
+
+      引継ぎ
+
+    </button>
+
+
+    <button
+      id="returnTab"
+      class="tab"
+      onclick="showMode('return')">
+
+      返却
+
+    </button>
+
+  </div>
+
+
+  <!-- =====================================================
+       使用開始
+       ===================================================== -->
+
+  <div
+    id="startArea"
+    class="card">
+
+    <p class="description">
+
+      社員バーコードと車両バーコードを読み取り、
+      現場を入力してください。
+
+    </p>
+
+
+    <label>
+      社員バーコード
+    </label>
+
+    <input
+      id="startEmployee"
+      class="barcode"
+      type="text"
+      readonly
+      placeholder="S0001">
+
+    <button
+      class="cameraButton"
+      onclick="startScanner('startEmployee')">
+
+      📷 社員バーコードを読む
+
+    </button>
+
+
+    <label>
+      車両バーコード
+    </label>
+
+    <input
+      id="startCar"
+      class="barcode"
+      type="text"
+      readonly
+      placeholder="J01">
+
+    <button
+      class="cameraButton"
+      onclick="startScanner('startCar')">
+
+      📷 車両バーコードを読む
+
+    </button>
+
+
+    <label>
+      現場
+    </label>
+
+    <input
+      id="startSite"
+      type="text"
+      placeholder="現場名">
+
+
+    <button
+      class="mainButton"
+      onclick="submitStart()">
+
+      使用開始
+
+    </button>
+
+  </div>
+
+
+  <!-- =====================================================
+       引継ぎ
+       ===================================================== -->
+
+  <div
+    id="transferArea"
+    class="card hidden">
+
+    <p class="description">
+
+      現在使用している社員から、
+      次に使用する社員へ車両を引き継ぎます。
+
+    </p>
+
+
+    <label>
+      引継ぎ元社員
+    </label>
+
+    <input
+      id="transferFromEmployee"
+      class="barcode"
+      type="text"
+      readonly
+      placeholder="S0001">
+
+    <button
+      class="cameraButton"
+      onclick="startScanner('transferFromEmployee')">
+
+      📷 引継ぎ元社員を読む
+
+    </button>
+
+
+    <label>
+      引継ぎ先社員
+    </label>
+
+    <input
+      id="transferToEmployee"
+      class="barcode"
+      type="text"
+      readonly
+      placeholder="S0002">
+
+    <button
+      class="cameraButton"
+      onclick="startScanner('transferToEmployee')">
+
+      📷 引継ぎ先社員を読む
+
+    </button>
+
+
+    <label>
+      車両バーコード
+    </label>
+
+    <input
+      id="transferCar"
+      class="barcode"
+      type="text"
+      readonly
+      placeholder="J01">
+
+    <button
+      class="cameraButton"
+      onclick="startScanner('transferCar')">
+
+      📷 車両バーコードを読む
+
+    </button>
+
+
+    <label>
+      次の現場
+    </label>
+
+    <input
+      id="transferSite"
+      type="text"
+      placeholder="次の現場名">
+
+
+    <button
+      class="mainButton"
+      onclick="submitTransfer()">
+
+      引継ぎ
+
+    </button>
+
+  </div>
+
+
+  <!-- =====================================================
+       返却
+       ===================================================== -->
+
+  <div
+    id="returnArea"
+    class="card hidden">
+
+    <p class="description">
+
+      返却した社員と車両のバーコードを読み取ってください。
+
+    </p>
+
+
+    <label>
+      返却者
+    </label>
+
+    <input
+      id="returnEmployee"
+      class="barcode"
+      type="text"
+      readonly
+      placeholder="S0001">
+
+    <button
+      class="cameraButton"
+      onclick="startScanner('returnEmployee')">
+
+      📷 返却者バーコードを読む
+
+    </button>
+
+
+    <label>
+      車両バーコード
+    </label>
+
+    <input
+      id="returnCar"
+      class="barcode"
+      type="text"
+      readonly
+      placeholder="J01">
+
+    <button
+      class="cameraButton"
+      onclick="startScanner('returnCar')">
+
+      📷 車両バーコードを読む
+
+    </button>
+
+
+    <button
+      class="mainButton"
+      onclick="submitReturn()">
+
+      返却
+
+    </button>
+
+  </div>
+
+
+  <!-- =====================================================
+       カメラエリア
+       ===================================================== -->
+
+  <div
+    id="scannerArea"
+    class="scanBox hidden">
+
+    <div id="scanMessage">
+      バーコードをカメラに映してください
+    </div>
+
+    <div id="reader"></div>
+
+    <button
+      class="closeButton"
+      onclick="stopScanner()">
+
+      カメラを閉じる
+
+    </button>
+
+  </div>
+
+
+</div>
+
+
+<script>
+
+
+/* =========================================================
+   ★ここだけ変更する★
+   =========================================================
+   
+   Apps Scriptで再デプロイしたときに表示された
+   「ウェブアプリのURL」を貼る。
+
+   必ず最後が /exec のURLを使う。
+   ========================================================= */
+
+const APPS_SCRIPT_URL =
+  "https://script.google.com/macros/s/AKfycbyyju--k-IznVnqgficK0pJBqmIkdB5oaZFHQknAtMrKqZO9ayuA4lPjwciEsuX2ZzN/exec";
+
+
+/* =========================================================
+   カメラ
+   ========================================================= */
+
+let scanner = null;
+
+let scanTarget = null;
+
+let reading = false;
+
+
+/* =========================================================
+   画面切替
+   ========================================================= */
+
+function showMode(mode) {
+
+  const areas = {
+    start: "startArea",
+    transfer: "transferArea",
+    return: "returnArea"
+  };
+
+  const tabs = {
+    start: "startTab",
+    transfer: "transferTab",
+    return: "returnTab"
+  };
+
+
+  Object.keys(areas).forEach(function(key) {
+
+    document
+      .getElementById(areas[key])
+      .classList.toggle(
+        "hidden",
+        key !== mode
+      );
+
+
+    document
+      .getElementById(tabs[key])
+      .classList.toggle(
+        "active",
+        key === mode
+      );
+
+  });
+
+
+  stopScanner();
+
+}
+
+
+/* =========================================================
+   カメラ開始
+   ========================================================= */
+
+async function startScanner(targetId) {
+
+  scanTarget =
+    targetId;
+
+  reading =
+    false;
+
+
+  document
+    .getElementById("scannerArea")
+    .classList.remove("hidden");
+
+
+  document
+    .getElementById("scanMessage")
+    .textContent =
+      "バーコードをカメラに映してください";
+
+
+  if (scanner) {
+
+    await stopScanner();
+
+  }
+
+
+  scanner =
+    new Html5Qrcode("reader");
+
+
+  try {
+
+    await scanner.start(
+
+      {
+        facingMode: "environment"
+      },
+
+      {
+        fps: 10,
+
+        qrbox: {
+          width: 300,
+          height: 150
+        },
+
+        formatsToSupport: [
+          Html5QrcodeSupportedFormats.CODE_39
+        ]
+      },
+
+      function(decodedText) {
+
+        barcodeRead(decodedText);
+
+      },
+
+      function() {
+
+        // 読み取り途中のエラーは無視
+
+      }
+
+    );
+
+  } catch (error) {
+
+    document
+      .getElementById("scanMessage")
+      .textContent =
+        "カメラを起動できません。\n" +
+        error;
+
+  }
+
+}
+
+
+/* =========================================================
+   バーコード読取成功
+   ========================================================= */
+
+async function barcodeRead(text) {
+
+  if (
+    reading ||
+    !scanTarget
+  ) {
+
+    return;
+
+  }
+
+
+  reading =
+    true;
+
+
+  document
+    .getElementById(scanTarget)
+    .value =
+      String(text).trim();
+
+
+  await stopScanner();
+
+}
+
+
+/* =========================================================
+   カメラ停止
+   ========================================================= */
+
+async function stopScanner() {
+
+  document
+    .getElementById("scannerArea")
+    .classList.add("hidden");
+
+
+  if (!scanner) {
+
+    return;
+
+  }
+
+
+  try {
+
+    if (scanner.isScanning) {
+
+      await scanner.stop();
+
+    }
+
+
+    scanner.clear();
+
+  } catch (error) {
+
+    console.log(error);
+
+  }
+
+
+  scanner =
+    null;
+
+}
+
+
+/* =========================================================
+   PIN確認
+   ========================================================= */
+
+function getPin() {
+
+  return document
+    .getElementById("pin")
+    .value
+    .trim();
+
+}
+
+
+/* =========================================================
+   Apps Scriptへ送信
+   =========================================================
+   
+   fetchではなく普通の<form POST>を使う。
+   
+   これならGitHub Pages
+   ↓
+   Apps Script
+   
+   のブラウザ制限を受けにくい。
+   ========================================================= */
+
+function postToAppsScript(data) {
+
+
+  if (
+    !APPS_SCRIPT_URL ||
+    APPS_SCRIPT_URL.indexOf("https://") !== 0
+  ) {
+
+    alert(
+      "Apps ScriptのウェブアプリURLが設定されていません。"
+    );
+
+    return;
+  }
+
+
+  const form =
+    document.createElement("form");
+
+
+  form.method =
+    "POST";
+
+
+  form.action =
+    APPS_SCRIPT_URL;
+
+
+  Object.keys(data)
+    .forEach(function(key) {
+
+
+      const input =
+        document.createElement("input");
+
+
+      input.type =
+        "hidden";
+
+
+      input.name =
+        key;
+
+
+      input.value =
+        data[key];
+
+
+      form.appendChild(input);
+
+    });
+
+
+  document.body
+    .appendChild(form);
+
+
+  form.submit();
+
+}
+
+
+/* =========================================================
+   使用開始
+   ========================================================= */
+
+function submitStart() {
+
+  const pin =
+    getPin();
+
+
+  const employeeNo =
+    document
+      .getElementById("startEmployee")
+      .value
+      .trim();
+
+
+  const carNo =
+    document
+      .getElementById("startCar")
+      .value
+      .trim();
+
+
+  const site =
+    document
+      .getElementById("startSite")
+      .value
+      .trim();
+
+
+  if (!pin) {
+
+    alert("利用PINを入力してください。");
+
+    return;
+  }
+
+
+  if (!employeeNo) {
+
+    alert(
+      "社員バーコードを読み取ってください。"
+    );
+
+    return;
+  }
+
+
+  if (!carNo) {
+
+    alert(
+      "車両バーコードを読み取ってください。"
+    );
+
+    return;
+  }
+
+
+  if (!site) {
+
+    alert(
+      "現場を入力してください。"
+    );
+
+    return;
+  }
+
+
+  postToAppsScript({
+
+    pin: pin,
+
+    action: "start",
+
+    employeeNo: employeeNo,
+
+    carNo: carNo,
+
+    site: site
+
+  });
+
+}
+
+
+/* =========================================================
+   引継ぎ
+   ========================================================= */
+
+function submitTransfer() {
+
+  const pin =
+    getPin();
+
+
+  const fromEmployeeNo =
+    document
+      .getElementById(
+        "transferFromEmployee"
+      )
+      .value
+      .trim();
+
+
+  const toEmployeeNo =
+    document
+      .getElementById(
+        "transferToEmployee"
+      )
+      .value
+      .trim();
+
+
+  const carNo =
+    document
+      .getElementById(
+        "transferCar"
+      )
+      .value
+      .trim();
+
+
+  const nextSite =
+    document
+      .getElementById(
+        "transferSite"
+      )
+      .value
+      .trim();
+
+
+  if (!pin) {
+
+    alert(
+      "利用PINを入力してください。"
+    );
+
+    return;
+  }
+
+
+  if (!fromEmployeeNo) {
+
+    alert(
+      "引継ぎ元社員を読み取ってください。"
+    );
+
+    return;
+  }
+
+
+  if (!toEmployeeNo) {
+
+    alert(
+      "引継ぎ先社員を読み取ってください。"
+    );
+
+    return;
+  }
+
+
+  if (!carNo) {
+
+    alert(
+      "車両バーコードを読み取ってください。"
+    );
+
+    return;
+  }
+
+
+  if (!nextSite) {
+
+    alert(
+      "次の現場を入力してください。"
+    );
+
+    return;
+  }
+
+
+  postToAppsScript({
+
+    pin: pin,
+
+    action: "transfer",
+
+    fromEmployeeNo:
+      fromEmployeeNo,
+
+    toEmployeeNo:
+      toEmployeeNo,
+
+    carNo:
+      carNo,
+
+    nextSite:
+      nextSite
+
+  });
+
+}
+
+
+/* =========================================================
+   返却
+   ========================================================= */
+
+function submitReturn() {
+
+  const pin =
+    getPin();
+
+
+  const employeeNo =
+    document
+      .getElementById(
+        "returnEmployee"
+      )
+      .value
+      .trim();
+
+
+  const carNo =
+    document
+      .getElementById(
+        "returnCar"
+      )
+      .value
+      .trim();
+
+
+  if (!pin) {
+
+    alert(
+      "利用PINを入力してください。"
+    );
+
+    return;
+  }
+
+
+  if (!employeeNo) {
+
+    alert(
+      "返却者バーコードを読み取ってください。"
+    );
+
+    return;
+  }
+
+
+  if (!carNo) {
+
+    alert(
+      "車両バーコードを読み取ってください。"
+    );
+
+    return;
+  }
+
+
+  postToAppsScript({
+
+    pin: pin,
+
+    action: "return",
+
+    employeeNo:
+      employeeNo,
+
+    carNo:
+      carNo
+
+  });
+
+}
+
+
+/* =========================================================
+   初期表示
+   ========================================================= */
+
+window.addEventListener(
+  "load",
+  function() {
+
+    showMode("start");
+
+  }
+);
+
+
+</script>
+
+
+</body>
+
+</html>
